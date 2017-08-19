@@ -6,11 +6,6 @@ module Trie ( empty
 import qualified Data.Map as Map
 import Data.Maybe
 
-grid = [['N','R','Y','X'],
-        ['U','T','Q','F'],
-        ['A','O','S','H'],
-        ['E','K','M','A']]
-
 data Trie a = Trie { value :: Maybe a
                    , children :: Map.Map Char (Trie a) } deriving (Show)
 
