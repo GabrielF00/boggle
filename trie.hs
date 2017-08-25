@@ -1,4 +1,5 @@
-module Trie ( empty
+module Trie ( Trie
+            , empty
             , singleton
             , addToTrie
             , Trie.lookup) where
@@ -27,8 +28,9 @@ addToTrie all@(x:xs) val trie
           subTreeForX = fromJust $ Map.lookup x childTries
           
 lookup :: String -> Maybe (Trie Bool) -> Maybe Bool
-lookup _ Nothing          = Just False
+lookup _ Nothing          = Nothing
 lookup [] (Just trie)     = value trie
 lookup (x:xs) (Just trie) =
     Trie.lookup xs (Map.lookup x (children trie))
+
 
