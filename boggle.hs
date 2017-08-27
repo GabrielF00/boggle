@@ -1,41 +1,62 @@
 import Data.Char
-import Data.List (nub)
 import Data.Foldable
-import Data.Maybe
-import Data.Sequence
+import Data.List (intersperse, nub, sort)
 import qualified Data.Map as Map
-import Debug.Trace
+import Data.Maybe
+import Data.Sequence (update, fromList)
+import System.Random
 
 import Trie
 
 data GridCell = GridCell { letter :: Char
                          , visited :: Bool } deriving (Show, Eq)
 
-gridSize = 4
+gridSize = 5
+minWordSize = 4
 
 grid = [['N','R','Y','X'],
         ['U','T','Q','F'],
         ['A','O','S','H'],
         ['E','K','M','A']]
 
+grid5 = [['A','D','S','U','N'],
+         ['N','T','S','M','D'],
+         ['O','R','S','I','E'],
+         ['T','S','Y','R','E'],
+         ['S','B','R','N','K']]
+
 grid2 = [['N','R'],
          ['U','T']]
 
--- given a cell x,y
+generateGrid :: StdGen -> Int -> [[GridCell]]
+generateGrid randGen size = [ [ GridCell char False | char <- take size (drop ((i - 1) * size) randChars) ] | i <- [1..size] ]
+    where randChars = take (size * size) $ randomRs ('A','Z') randGen :: String
+
+printGrid :: [[GridCell]] -> [String]
+printGrid grid = [ [ letter gridCell | gridCell <- row ] | row <- grid]
+
+solve :: [[GridCell]] -> Trie Bool -> [String]
+solve grid wordTrie = (sort . nub) $ filter (/= "") 
+    (foldl (++) [""] (map (\(i,j) -> depthFirstSearch (i,j) grid wordTrie "" []) cellCoords))
+    where cellCoords = [(i,j) | i <- [0..gridSize-1], j <- [0..gridSize-1]]
+
+-- given a cell x,y,
 -- generate a list of adjacent cells
 -- generate a new grid with the cell (x,y) marked visited
 -- for each adjacent cell, if that cell has not been visited, and that cell is a prefix, recurse
 -- fold up the results from each of the adjacent cells into one list
 depthFirstSearch :: (Int, Int) -> [[GridCell]] -> Trie Bool -> String -> [String] -> [String]
 depthFirstSearch (x,y) grid trie progress words =
-    foldl (\acc w -> if w == [""] then acc else acc ++ w) [if isWord == Just True then z else []] (map (\(i,j) ->
-        if visited (grid !! j !! i) || isNothing isWord then [""]
-            else depthFirstSearch (i,j) newGrid trie z words) adjacent)
+    foldl (\acc w -> if w == [""] then acc else acc ++ w)
+        [if isWord == Just True && length z >= minWordSize then z else []] (map (\(i,j) ->
+            if visited (grid !! j !! i) || isPrefix then [""]
+                else depthFirstSearch (i,j) newGrid trie z words) adjacent)
     where adjacent = getAdjacent (x,y) (gridSize, gridSize)
           newGrid = markVisited (x,y) grid
           currentLetter = letter (grid !! y !! x)
           z = progress ++ [currentLetter]
           isWord = Trie.lookup z (Just trie)
+          isPrefix = isNothing isWord
 
 -- Creates a new 2D array of GridCells. 
 -- take row y of the grid, turn it into a sequence (which allows updating elements), replace
@@ -59,15 +80,12 @@ buildTrie :: [String] -> Trie Bool -> Trie Bool
 buildTrie words t = foldl (\t x -> addToTrie x True t) t words
 
 main = do
-    wordFile <- readFile  "words.txt"
+    randGen <- getStdGen
+    let generatedGrid = generateGrid randGen 5
+    forM_ (printGrid generatedGrid) (putStrLn . intersperse ' ')
+    wordFile <- readFile "words.txt"
     let words = lines wordFile
     let wordTrie = buildTrie words (Trie.singleton False)
-    --print $ Trie.lookup "ADDITION" (Just wordTrie)
-    -- print $ Trie.lookup "ADSDF" (Just wordTrie)
-    -- print $ Trie.lookup "ASA" (Just wordTrie)
-
-    --print wordTrie
-    let gridCells = toGridCell grid
-    let cells = [(i,j) | i <- [0..gridSize-1], j <- [0..gridSize-1]]
-    let result = map (\(i, j) -> depthFirstSearch (i,j) gridCells wordTrie "" []) cells
+    let result = solve generatedGrid wordTrie
     print result
+
