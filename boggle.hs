@@ -14,20 +14,6 @@ data GridCell = GridCell { letter :: Char
 gridSize = 5
 minWordSize = 4
 
-grid = [['N','R','Y','X'],
-        ['U','T','Q','F'],
-        ['A','O','S','H'],
-        ['E','K','M','A']]
-
-grid5 = [['A','D','S','U','N'],
-         ['N','T','S','M','D'],
-         ['O','R','S','I','E'],
-         ['T','S','Y','R','E'],
-         ['S','B','R','N','K']]
-
-grid2 = [['N','R'],
-         ['U','T']]
-
 generateGrid :: StdGen -> Int -> [[GridCell]]
 generateGrid randGen size = [ [ GridCell char False | char <- take size (drop ((i - 1) * size) randChars) ] | i <- [1..size] ]
     where randChars = take (size * size) $ randomRs ('A','Z') randGen :: String
@@ -88,4 +74,3 @@ main = do
     let wordTrie = buildTrie words (Trie.singleton False)
     let result = solve generatedGrid wordTrie
     print result
-
